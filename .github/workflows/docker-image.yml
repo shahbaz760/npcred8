@@ -1,0 +1,82 @@
+name: vegeta
+
+on:
+  push:
+     branches:
+          - main
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: get_code     
+        uses: actions/checkout@v4
+
+      - name: Configure AWS CLI
+        run: |
+            aws configure set aws_access_key_id ${{ secrets.AWS_ACCESS_KEY_ID }}
+            aws configure set aws_secret_access_key ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+            aws configure set region ${{ secrets.AWS_REGION }}
+          
+      - name: Create env
+        env:
+          ENV: "goluuuuuuuuuuuuuuuuuuu"
+        run: echo $ENV>.env
+
+      - name: Configure AWS CLI
+        run: |
+            cd /home/runner/work/nocred6/nocred6/back/
+            aws ecr get-login-password --region us-east-2 | docker login --username AWS --password-stdin 423755636060.dkr.ecr.us-east-2.amazonaws.com
+            echo "build"
+            docker build -t golu .
+            echo "tag"
+            docker tag golu:latest 423755636060.dkr.ecr.us-east-2.amazonaws.com/golu:latest
+            echo "push"
+            docker push 423755636060.dkr.ecr.us-east-2.amazonaws.com/golu:latest
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up SSH key for EC2 access # hdghghg
+        run: |
+            mkdir -p ~/.ssh
+            echo "${{ secrets.EC2_SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+            chmod 600 ~/.ssh/id_rsa
+
+      - name: Configure AWS CLI
+        run: |
+            aws configure set aws_access_key_id ${{ secrets.AWS_ACCESS_KEY_ID }}
+            aws configure set aws_secret_access_key ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+            aws configure set region ${{ secrets.AWS_REGION }}
+
+      - name: Deploy to EC2  
+        run: |
+            ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ${{ secrets.USER }}@${{ secrets.HOST }} << 'EOF'
+                echo "Successfully connected to EC2!"
+                set -x
+                aws configure set aws_access_key_id ${{ secrets.AWS_ACCESS_KEY_ID }}
+                aws configure set aws_secret_access_key ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+                aws configure set region ${{ secrets.AWS_REGION }}
+                aws ecr get-login-password --region us-east-2 | docker login --username AWS --password-stdin 423755636060.dkr.ecr.us-east-2.amazonaws.com
+                echo "login done"
+                echo "Pulling the latest Docker image"
+                docker pull 423755636060.dkr.ecr.us-east-2.amazonaws.com/golu:latest
+                echo "run container"
+                docker stop lala 
+                docker rm lala
+                docker run -d --name lala -p 8082:80 423755636060.dkr.ecr.us-east-2.amazonaws.com/golu:latest
+                echo "Cleaning up unused Docker resources"
+                docker system prune -a --force
+                echo "CLEEEEEEEEEEEEENNNNN"
+                image_ids=$(aws ecr list-images --repository-name golu --region us-east-2 --query 'imageIds[*]' --output json)
+
+                if [ -n "$image_ids" ]; then
+                    aws ecr batch-delete-image \
+                         --repository-name golu \
+                         --image-ids "$image_ids" \
+                         --region us-east-2
+                else
+                    echo "No images found for deletion."
+                fi
+
+            EOF
