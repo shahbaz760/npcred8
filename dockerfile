@@ -13,7 +13,7 @@ WORKDIR /app
 COPY . .
 
 # Step 5: Copy the rest of the application code into the container
-RUN pip install --no-cache-dir -r requirements.txt            (  add Django==4.2.11 in requirments.txt )
+RUN pip install --no-cache-dir -r requirements.txt       
 # Step 6: Run database migrations
 RUN python manage.py migrate
 
