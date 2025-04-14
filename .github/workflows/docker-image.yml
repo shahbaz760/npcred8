@@ -1,7 +1,12 @@
 name: prodddd runnnn
 
 on:
-    workflow_dispatch:
+  workflow_dispatch:
+    inputs:
+      example_input:
+        description: 'Example input'
+        required: false
+        default: 'hello'
 
 
 jobs:
