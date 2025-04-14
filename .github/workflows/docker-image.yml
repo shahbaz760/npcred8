@@ -1,9 +1,7 @@
 name: prodddd runnnn
 
 on:
-  push:
-      branches:
-            - prod
+    workflow_dispatch:
 
 
 jobs:
