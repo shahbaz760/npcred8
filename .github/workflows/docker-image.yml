@@ -2,11 +2,6 @@ name: prodddd runnnn
 
 on:
   workflow_dispatch:
-    inputs:
-      environment:
-        description: 'Deploy environment'
-        required: true
-        default: 'staging'
 
 
 jobs:
